@@ -124,13 +124,31 @@ getBAFsAndLogRs = function(tumourAlleleCountsFile.prefix, normalAlleleCountsFile
   tumor.BAF = data.frame(Chromosome=input_data$CHR[indices], Position=input_data$POS[indices], baf=mutantBAF)
   tumor.LogR = data.frame(Chromosome=input_data$CHR[indices], Position=input_data$POS[indices], samplename=log2(mutantLogR/mean(mutantLogR, na.rm=T)))
   alleleCounts = data.frame(Chromosome=input_data$CHR[indices], Position=input_data$POS[indices], mutCountT1=mutCount1, mutCountT2=mutCount2, mutCountN1=normCount1, mutCountN2=normCount2)
+  
+  # Add in ascat modifications MW
+  loci_binsize = 500
+  posbins <- paste(germline.BAF$Chromosome, round(germline.BAF$Position/loci_binsize), sep = "_")
+  # get idx of likely hetSNPs, max 1 per bin
+  hetidx <- which(germline.BAF$baf > 0.01 & germline.BAF$baf < 0.99)
+  hetidx <- hetidx[which(!duplicated(posbins[hetidx]))]
+  # get idx of rest of loci, max 1 per bin
+  homidx <- which(!(duplicated(posbins) | posbins %in% posbins[hetidx]))
+  # merge idxs and sort again
+  unifidx <- sort(x = union(homidx, hetidx), decreasing = FALSE)
+
+  # Save downsampled data.frames to disk MW
+  write.table(germline.BAF[unifidx, ],file=BAFnormalFile, row.names=F, quote=F, sep="\t", col.names=c("Chromosome","Position",samplename))
+  write.table(tumor.BAF[unifidx, ],file=BAFmutantFile, row.names=F, quote=F, sep="\t", col.names=c("Chromosome","Position",samplename))
+  write.table(germline.LogR[unifidx, ],file=logRnormalFile, row.names=F, quote=F, sep="\t", col.names=c("Chromosome","Position",samplename))
+  write.table(tumor.LogR[unifidx, ],file=logRmutantFile, row.names=F, quote=F, sep="\t", col.names=c("Chromosome","Position",samplename))
+  write.table(alleleCounts[unifidx, ], file=combinedAlleleCountsFile, row.names=F, quote=F, sep="\t")
 
   # Save data.frames to disk
-  write.table(germline.BAF,file=BAFnormalFile, row.names=F, quote=F, sep="\t", col.names=c("Chromosome","Position",samplename))
-  write.table(tumor.BAF,file=BAFmutantFile, row.names=F, quote=F, sep="\t", col.names=c("Chromosome","Position",samplename))
-  write.table(germline.LogR,file=logRnormalFile, row.names=F, quote=F, sep="\t", col.names=c("Chromosome","Position",samplename))
-  write.table(tumor.LogR,file=logRmutantFile, row.names=F, quote=F, sep="\t", col.names=c("Chromosome","Position",samplename))
-  write.table(alleleCounts, file=combinedAlleleCountsFile, row.names=F, quote=F, sep="\t")
+  # write.table(germline.BAF,file=BAFnormalFile, row.names=F, quote=F, sep="\t", col.names=c("Chromosome","Position",samplename))
+  # write.table(tumor.BAF,file=BAFmutantFile, row.names=F, quote=F, sep="\t", col.names=c("Chromosome","Position",samplename))
+  # write.table(germline.LogR,file=logRnormalFile, row.names=F, quote=F, sep="\t", col.names=c("Chromosome","Position",samplename))
+  # write.table(tumor.LogR,file=logRmutantFile, row.names=F, quote=F, sep="\t", col.names=c("Chromosome","Position",samplename))
+  # write.table(alleleCounts, file=combinedAlleleCountsFile, row.names=F, quote=F, sep="\t")
 
   # Plot the raw data using ASCAT
   # Manually create an ASCAT object, which saves reading in the above files again
