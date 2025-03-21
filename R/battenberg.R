@@ -161,7 +161,7 @@ battenberg = function(analysis="paired", tumourname, normalname, tumour_data_fil
         doParallel::registerDoParallel(clp)
         
         if (analysis == "paired"){
-        prepare_wgs(chrom_names=chrom_names,
+        prepare_wgs_longread(chrom_names=chrom_names,
                     tumourbam=tumour_data_file[sampleidx],
                     normalbam=normal_data_file,
                     tumourname=tumourname[sampleidx],
